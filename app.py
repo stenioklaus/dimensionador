@@ -159,25 +159,33 @@ with st.sidebar:
     def slider_com_botoes(label, key, min_val, max_val, default, step=1):
         if key not in st.session_state:
             st.session_state[key] = default
-        c1, c2, c3 = st.columns([1, 3, 1])
+        st.caption(label)
+        c1, c2, c3 = st.columns([1, 2, 1])
         if c1.button("−", key=f"{key}_menos", use_container_width=True):
             st.session_state[key] = max(min_val, st.session_state[key] - step)
             st.rerun()
-        c2.markdown(f"<div style='text-align:center;font-size:14px;padding-top:6px;'><b>{label}</b><br>{st.session_state[key]}°</div>", unsafe_allow_html=True)
+        digitado = c2.number_input(
+            label, min_value=min_val, max_value=max_val,
+            value=st.session_state[key], step=step,
+            key=f"{key}_input", label_visibility="collapsed"
+        )
+        if digitado != st.session_state[key]:
+            st.session_state[key] = digitado
+            st.rerun()
         if c3.button("+", key=f"{key}_mais", use_container_width=True):
             st.session_state[key] = min(max_val, st.session_state[key] + step)
             st.rerun()
         return st.session_state[key]
 
     st.subheader("🔆 Arranjo 1")
-    inc1 = slider_com_botoes("Inclinação 1", "inc1", 0, 90, 20, step=1)
-    azi1 = slider_com_botoes("Azimute 1", "azi1", -180, 180, 0, step=1)
-    pot_mod1 = st.number_input("Potência módulo 1 (Wp)", value=610, min_value=250, step=5)
+    inc1 = slider_com_botoes("Inclinação", "inc1", 0, 90, 20, step=1)
+    azi1 = slider_com_botoes("Orientação", "azi1", -180, 180, 0, step=1)
+    pot_mod1 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5)
 
     st.subheader("🔆 Arranjo 2")
-    inc2 = slider_com_botoes("Inclinação 2", "inc2", 0, 90, 20, step=1)
-    azi2 = slider_com_botoes("Azimute 2", "azi2", -180, 180, 0, step=1)
-    pot_mod2 = st.number_input("Potência módulo 2 (Wp)", value=610, min_value=250, step=5)
+    inc2 = slider_com_botoes("Inclinação", "inc2", 0, 90, 20, step=1)
+    azi2 = slider_com_botoes("Orientação", "azi2", -180, 180, 0, step=1)
+    pot_mod2 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5)
 
     st.subheader("⚙️ Parâmetros do Sistema")
     ef_sys = st.slider("PR Base (eficiência do sistema)", 0.50, 1.00, 0.75, step=0.05)
@@ -268,7 +276,7 @@ else:
     st.markdown("""
     **Como usar:**
     1. Digite a cidade — as coordenadas são buscadas automaticamente
-    2. Configure os dois arranjos (inclinação, azimute, potência dos módulos)
+    2. Configure os dois arranjos (inclinação, orientação e potência dos módulos)
     3. Ajuste a eficiência e coeficientes do sistema
     4. Clique em *Calcular com dados da NASA*
     5. Se quiser, ajuste o número de módulos manualmente e recalcule
