@@ -42,11 +42,14 @@ def buscar_coordenadas(cidade):
         response = requests.get(url, headers=headers, timeout=5).json()
         if response:
             return float(response[0]["lat"]), float(response[0]["lon"])
-    except Exception:
-        pass
+    except requests.exceptions.ConnectionError:
+        st.warning("Sem conexão com a internet.")
+    except Exception as e:
+        st.warning(f"Não foi possível buscar coordenadas: {e}")
     return None, None
 
 
+@st.cache_data(ttl=3600)
 def buscar_dados_nasa(lat, lon):
     api_url = (
         f"https://power.larc.nasa.gov/api/temporal/daily/point"
@@ -151,32 +154,37 @@ with st.sidebar:
 
     lat = st.number_input("Latitude", value=st.session_state.get("lat", -29.57), format="%.4f")
     lon = st.number_input("Longitude", value=st.session_state.get("lon", -50.79), format="%.4f")
-    meta = st.number_input("Meta de consumo (kWh/mês)", value=1000, min_value=1)
+    meta = st.number_input("Meta de consumo (kWh/mês)", value=1000, min_value=200)
 
     def slider_com_botoes(label, key, min_val, max_val, default, step=1):
         if key not in st.session_state:
             st.session_state[key] = default
-        st.caption(f"{label}: **{st.session_state[key]}°**")
-        c1, c2, c3 = st.columns([1, 4, 1])
+
+        c1, c2, c3 = st.columns([1, 6, 1])
         if c1.button("−", key=f"{key}_menos"):
             st.session_state[key] = max(min_val, st.session_state[key] - step)
-        st.session_state[key] = c2.slider(
-            label, min_val, max_val,
-            st.session_state[key], step,
-            label_visibility="collapsed", key=f"{key}_slider"
-        )
         if c3.button("+", key=f"{key}_mais"):
             st.session_state[key] = min(max_val, st.session_state[key] + step)
+
+        val = c2.slider(
+            f"{label}: {st.session_state[key]}°",
+            min_val, max_val,
+            st.session_state[key], step,
+            key=f"{key}_slider"
+        )
+        if val != st.session_state[key]:
+            st.session_state[key] = val
+
         return st.session_state[key]
 
     st.subheader("🔆 Arranjo 1")
-    inc1 = slider_com_botoes("Inclinação 1 (°)", "inc1", 0, 90, 20, step=1)
-    azi1 = slider_com_botoes("Azimute 1 (°)", "azi1", -180, 180, 0, step=1)
+    inc1 = slider_com_botoes("Inclinação 1", "inc1", 0, 90, 20, step=1)
+    azi1 = slider_com_botoes("Azimute 1", "azi1", -180, 180, 0, step=1)
     pot_mod1 = st.number_input("Potência módulo 1 (Wp)", value=610, min_value=250, step=5)
 
     st.subheader("🔆 Arranjo 2")
-    inc2 = slider_com_botoes("Inclinação 2 (°)", "inc2", 0, 90, 20, step=1)
-    azi2 = slider_com_botoes("Azimute 2 (°)", "azi2", -180, 180, 0, step=1)
+    inc2 = slider_com_botoes("Inclinação 2", "inc2", 0, 90, 20, step=1)
+    azi2 = slider_com_botoes("Azimute 2", "azi2", -180, 180, 0, step=1)
     pot_mod2 = st.number_input("Potência módulo 2 (Wp)", value=610, min_value=250, step=5)
 
     st.subheader("⚙️ Parâmetros do Sistema")
@@ -210,8 +218,14 @@ if calcular:
             st.session_state["n1"] = n1
             st.session_state["n2"] = n2
             st.success("Dados carregados com sucesso!")
+        except requests.exceptions.Timeout:
+            st.error("A API da NASA demorou demais. Tente novamente.")
+        except requests.exceptions.ConnectionError:
+            st.error("Sem conexão com a internet.")
+        except KeyError:
+            st.error("Resposta inesperada da NASA. Verifique as coordenadas.")
         except Exception as e:
-            st.error(f"Erro ao buscar dados: {e}")
+            st.error(f"Erro inesperado: {e}")
 
 if "dados" in st.session_state:
     dados = st.session_state["dados"]
@@ -261,7 +275,7 @@ else:
     st.info("Configure os parâmetros na barra lateral e clique em **Calcular** para iniciar.")
     st.markdown("""
     **Como usar:**
-    1. Digite a cidade e clique em *Buscar coordenadas*
+    1. Digite a cidade — as coordenadas são buscadas automaticamente
     2. Configure os dois arranjos (inclinação, azimute, potência dos módulos)
     3. Ajuste a eficiência e coeficientes do sistema
     4. Clique em *Calcular com dados da NASA*
