@@ -170,9 +170,9 @@ with st.sidebar:
         return st.session_state[key]
 
     st.subheader("🔆 Arranjo 1")
-    inc1 = slider_com_botoes("Inclinação 1 (°)", "inc1", 0, 90, 20)
-    azi1 = slider_com_botoes("Azimute 1 (°)", "azi1", -180, 180, 0)
-    pot_mod1 = st.number_input("Potência módulo 1 (Wp)", value=610, min_value=1)
+    inc1 = slider_com_botoes("Inclinação 1 (°)", "inc1", 0, 90, 20, step=1)
+    azi1 = slider_com_botoes("Azimute 1 (°)", "azi1", -180, 180, 0, step=1)
+    pot_mod1 = st.number_input("Potência módulo 1 (Wp)", value=610, min_value=250, step=5)
 
     st.subheader("🔆 Arranjo 2")
     inc2 = slider_com_botoes("Inclinação 2 (°)", "inc2", 0, 90, 20)
