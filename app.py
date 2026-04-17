@@ -175,14 +175,14 @@ with st.sidebar:
     pot_mod1 = st.number_input("Potência módulo 1 (Wp)", value=610, min_value=250, step=5)
 
     st.subheader("🔆 Arranjo 2")
-    inc2 = slider_com_botoes("Inclinação 2 (°)", "inc2", 0, 90, 20)
-    azi2 = slider_com_botoes("Azimute 2 (°)", "azi2", -180, 180, 0)
+    inc2 = slider_com_botoes("Inclinação 2 (°)", "inc2", 0, 90, 20, step=1)
+    azi2 = slider_com_botoes("Azimute 2 (°)", "azi2", -180, 180, 0, step=1)
     pot_mod2 = st.number_input("Potência módulo 2 (Wp)", value=610, min_value=250, step=5)
 
     st.subheader("⚙️ Parâmetros do Sistema")
     ef_sys = st.slider("PR Base (eficiência do sistema)", 0.50, 1.00, 0.75, step=0.05)
     temp_coef = st.number_input("Coeficiente de temperatura", value=-0.004, format="%.4f")
-    ref_temp = st.number_input("Temperatura de referência (°C)", value=25.0)
+    ref_temp = st.number_input("Temperatura de referência (°C)", value=25, step=1)
 
     st.divider()
     st.subheader("📲 Telegram (opcional)")
