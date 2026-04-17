@@ -7,8 +7,8 @@ import os
 
 st.set_page_config(page_title="Dimensionador Fotovoltaico", page_icon="☀️", layout="wide")
 
-st.title("☀️ Dimensionador Fotovoltaico")
-st.caption("Cálculo de geração solar com dados da NASA POWER")
+st.title("☀️ Dimensionador Fotovoltaico ☀️")
+st.caption("Cálculo de geração solar com dados da NASA POWER, elaborado por Estevão Krause - Der Krause")
 
 # ── Funções de cálculo ────────────────────────────────────────────────────────
 
@@ -152,14 +152,30 @@ with st.sidebar:
     lon = st.number_input("Longitude", value=st.session_state.get("lon", -50.79), format="%.4f")
     meta = st.number_input("Meta de consumo (kWh/mês)", value=1000, min_value=1)
 
+    def slider_com_botoes(label, key, min_val, max_val, default, step=1):
+        if key not in st.session_state:
+            st.session_state[key] = default
+        st.caption(f"{label}: **{st.session_state[key]}°**")
+        c1, c2, c3 = st.columns([1, 4, 1])
+        if c1.button("−", key=f"{key}_menos"):
+            st.session_state[key] = max(min_val, st.session_state[key] - step)
+        st.session_state[key] = c2.slider(
+            label, min_val, max_val,
+            st.session_state[key], step,
+            label_visibility="collapsed", key=f"{key}_slider"
+        )
+        if c3.button("+", key=f"{key}_mais"):
+            st.session_state[key] = min(max_val, st.session_state[key] + step)
+        return st.session_state[key]
+
     st.subheader("🔆 Arranjo 1")
-    inc1 = st.slider("Inclinação 1 (°)", 0, 90, 20)
-    azi1 = st.slider("Azimute 1 (°)", -180, 180, 0)
+    inc1 = slider_com_botoes("Inclinação 1 (°)", "inc1", 0, 90, 20)
+    azi1 = slider_com_botoes("Azimute 1 (°)", "azi1", -180, 180, 0)
     pot_mod1 = st.number_input("Potência módulo 1 (Wp)", value=610, min_value=1)
 
     st.subheader("🔆 Arranjo 2")
-    inc2 = st.slider("Inclinação 2 (°)", 0, 90, 20)
-    azi2 = st.slider("Azimute 2 (°)", -180, 180, 0)
+    inc2 = slider_com_botoes("Inclinação 2 (°)", "inc2", 0, 90, 20)
+    azi2 = slider_com_botoes("Azimute 2 (°)", "azi2", -180, 180, 0)
     pot_mod2 = st.number_input("Potência módulo 2 (Wp)", value=610, min_value=1)
 
     st.subheader("⚙️ Parâmetros do Sistema")
