@@ -136,19 +136,20 @@ with st.sidebar:
     st.header("Configurações")
 
     st.subheader("📍 Localização")
-    cidade = st.text_input("Cidade", value="Igrejinha")
+    cidade = st.text_input("Cidade", value="Igrejinha", placeholder="Digite e pressione Enter")
 
-    col_busca, _ = st.columns([1, 1])
-    if col_busca.button("Buscar coordenadas", use_container_width=True):
-        lat_auto, lon_auto = buscar_coordenadas(cidade)
-        if lat_auto:
-            st.session_state["lat"] = lat_auto
-            st.session_state["lon"] = lon_auto
-            st.success(f"Encontrado: {lat_auto:.4f}, {lon_auto:.4f}")
-        else:
-            st.error("Cidade não encontrada.")
+    if cidade != st.session_state.get("cidade_anterior", ""):
+        st.session_state["cidade_anterior"] = cidade
+        if len(cidade) > 3:
+            lat_auto, lon_auto = buscar_coordenadas(cidade)
+            if lat_auto:
+                st.session_state["lat"] = lat_auto
+                st.session_state["lon"] = lon_auto
+                st.success(f"📍 {cidade}: {lat_auto:.4f}, {lon_auto:.4f}")
+            else:
+                st.warning("Cidade não encontrada. Ajuste as coordenadas manualmente.")
 
-    lat = st.number_input("Latitude", value=st.session_state.get("lat", -29.64), format="%.4f")
+    lat = st.number_input("Latitude", value=st.session_state.get("lat", -29.57), format="%.4f")
     lon = st.number_input("Longitude", value=st.session_state.get("lon", -50.79), format="%.4f")
     meta = st.number_input("Meta de consumo (kWh/mês)", value=1000, min_value=1)
 
