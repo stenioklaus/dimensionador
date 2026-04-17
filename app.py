@@ -154,27 +154,19 @@ with st.sidebar:
 
     lat = st.number_input("Latitude", value=st.session_state.get("lat", -29.57), format="%.4f")
     lon = st.number_input("Longitude", value=st.session_state.get("lon", -50.79), format="%.4f")
-    meta = st.number_input("Meta de consumo (kWh/mês)", value=1000, min_value=200)
+    meta = st.number_input("Meta de consumo (kWh/mês)", value=1000, min_value=200, step=100)
 
     def slider_com_botoes(label, key, min_val, max_val, default, step=1):
         if key not in st.session_state:
             st.session_state[key] = default
-
-        c1, c2, c3 = st.columns([1, 6, 1])
-        if c1.button("−", key=f"{key}_menos"):
+        c1, c2, c3 = st.columns([1, 3, 1])
+        if c1.button("−", key=f"{key}_menos", use_container_width=True):
             st.session_state[key] = max(min_val, st.session_state[key] - step)
-        if c3.button("+", key=f"{key}_mais"):
+            st.rerun()
+        c2.markdown(f"<div style='text-align:center;font-size:14px;padding-top:6px;'><b>{label}</b><br>{st.session_state[key]}°</div>", unsafe_allow_html=True)
+        if c3.button("+", key=f"{key}_mais", use_container_width=True):
             st.session_state[key] = min(max_val, st.session_state[key] + step)
-
-        val = c2.slider(
-            f"{label}: {st.session_state[key]}°",
-            min_val, max_val,
-            st.session_state[key], step,
-            key=f"{key}_slider"
-        )
-        if val != st.session_state[key]:
-            st.session_state[key] = val
-
+            st.rerun()
         return st.session_state[key]
 
     st.subheader("🔆 Arranjo 1")
