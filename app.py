@@ -177,7 +177,7 @@ with st.sidebar:
     st.subheader("🔆 Arranjo 2")
     inc2 = slider_com_botoes("Inclinação 2 (°)", "inc2", 0, 90, 20)
     azi2 = slider_com_botoes("Azimute 2 (°)", "azi2", -180, 180, 0)
-    pot_mod2 = st.number_input("Potência módulo 2 (Wp)", value=610, min_value=1)
+    pot_mod2 = st.number_input("Potência módulo 2 (Wp)", value=610, min_value=250, step=5)
 
     st.subheader("⚙️ Parâmetros do Sistema")
     ef_sys = st.slider("PR Base (eficiência do sistema)", 0.50, 1.00, 0.75, step=0.05)
