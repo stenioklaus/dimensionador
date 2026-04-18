@@ -107,33 +107,12 @@ def gerar_tabela_e_grafico(df_m, f1, f2, effs, n1, n2, pot_mod1_wp, pot_mod2_wp,
     plt.tight_layout()
     return df_res, fig
 
-def controle_numerico(label, key, min_val, max_val, default, step=1):
-    if key not in st.session_state:
-        st.session_state[key] = default
-
-    def diminuir():
-        st.session_state[key] = max(min_val, st.session_state[key] - step)
-
-    def aumentar():
-        st.session_state[key] = min(max_val, st.session_state[key] + step)
-
-    def digitar():
-        st.session_state[key] = st.session_state[f"{key}_input"]
-
-    st.caption(label)
-    c1, c2, c3 = st.columns([1, 2, 1])
-    c1.button("−", key=f"{key}_menos", on_click=diminuir, use_container_width=True)
-    c2.number_input(
-        label, min_value=min_val, max_value=max_val,
-        value=st.session_state[key], step=step,
-        key=f"{key}_input", label_visibility="collapsed",
-        on_change=digitar
-    )
-    c3.button("+", key=f"{key}_mais", on_click=aumentar, use_container_width=True)
-    return st.session_state[key]
+# Inicializa session_state
+for k, v in [("inc1", 20), ("azi1", 0), ("inc2", 20), ("azi2", 0)]:
+    if k not in st.session_state:
+        st.session_state[k] = v
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
-
 with st.sidebar:
     st.header("Configurações")
 
@@ -155,15 +134,50 @@ with st.sidebar:
     lon = st.number_input("Longitude", value=st.session_state.get("lon", -50.79), format="%.4f", key="lon_input")
     meta = st.number_input("Meta de consumo (kWh/mês)", value=1000, min_value=200, step=100, key="meta_input")
 
+    # Arranjo 1
     st.subheader("🔆 Arranjo 1")
-    inc1 = controle_numerico("Inclinação", "inc1", 0, 90, 20)
-    azi1 = controle_numerico("Orientação", "azi1", -180, 180, 0)
+    st.caption("Inclinação")
+    a1, b1, c1 = st.columns([1, 2, 1])
+    if a1.button("−", key="inc1_menos", use_container_width=True):
+        st.session_state["inc1"] = max(0, st.session_state["inc1"] - 1)
+    b1.markdown(f"<div style='text-align:center;padding:6px 0;font-size:18px;font-weight:600'>{st.session_state['inc1']}°</div>", unsafe_allow_html=True)
+    if c1.button("+", key="inc1_mais", use_container_width=True):
+        st.session_state["inc1"] = min(90, st.session_state["inc1"] + 1)
+
+    st.caption("Orientação")
+    a2, b2, c2 = st.columns([1, 2, 1])
+    if a2.button("−", key="azi1_menos", use_container_width=True):
+        st.session_state["azi1"] = max(-180, st.session_state["azi1"] - 1)
+    b2.markdown(f"<div style='text-align:center;padding:6px 0;font-size:18px;font-weight:600'>{st.session_state['azi1']}°</div>", unsafe_allow_html=True)
+    if c2.button("+", key="azi1_mais", use_container_width=True):
+        st.session_state["azi1"] = min(180, st.session_state["azi1"] + 1)
+
     pot_mod1 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5, key="pot_mod1")
 
+    # Arranjo 2
     st.subheader("🔆 Arranjo 2")
-    inc2 = controle_numerico("Inclinação", "inc2", 0, 90, 20)
-    azi2 = controle_numerico("Orientação", "azi2", -180, 180, 0)
+    st.caption("Inclinação")
+    a3, b3, c3 = st.columns([1, 2, 1])
+    if a3.button("−", key="inc2_menos", use_container_width=True):
+        st.session_state["inc2"] = max(0, st.session_state["inc2"] - 1)
+    b3.markdown(f"<div style='text-align:center;padding:6px 0;font-size:18px;font-weight:600'>{st.session_state['inc2']}°</div>", unsafe_allow_html=True)
+    if c3.button("+", key="inc2_mais", use_container_width=True):
+        st.session_state["inc2"] = min(90, st.session_state["inc2"] + 1)
+
+    st.caption("Orientação")
+    a4, b4, c4 = st.columns([1, 2, 1])
+    if a4.button("−", key="azi2_menos", use_container_width=True):
+        st.session_state["azi2"] = max(-180, st.session_state["azi2"] - 1)
+    b4.markdown(f"<div style='text-align:center;padding:6px 0;font-size:18px;font-weight:600'>{st.session_state['azi2']}°</div>", unsafe_allow_html=True)
+    if c4.button("+", key="azi2_mais", use_container_width=True):
+        st.session_state["azi2"] = min(180, st.session_state["azi2"] + 1)
+
     pot_mod2 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5, key="pot_mod2")
+
+    inc1 = st.session_state["inc1"]
+    azi1 = st.session_state["azi1"]
+    inc2 = st.session_state["inc2"]
+    azi2 = st.session_state["azi2"]
 
     st.subheader("⚙️ Parâmetros do Sistema")
     ef_sys = st.slider("PR Base (eficiência do sistema)", 0.50, 1.00, 0.75, step=0.05, key="ef_sys")
@@ -174,7 +188,6 @@ with st.sidebar:
     st.subheader("📲 Telegram (opcional)")
     tg_token = st.text_input("Token do bot", type="password", key="tg_token_input")
     tg_chat = st.text_input("Chat ID", key="tg_chat_input")
-
     if not tg_token:
         tg_token = os.environ.get("TELEGRAM_TOKEN", "")
     if not tg_chat:
@@ -183,7 +196,6 @@ with st.sidebar:
     calcular = st.button("🚀 Calcular com dados da NASA", type="primary", use_container_width=True)
 
 # ── Área principal ────────────────────────────────────────────────────────────
-
 if calcular:
     with st.spinner(f"Buscando dados NASA para {cidade}..."):
         try:
@@ -217,15 +229,14 @@ if "dados" in st.session_state:
         dados["df_m"], dados["f1"], dados["f2"], dados["effs"],
         n1_manual, n2_manual, pot_mod1, pot_mod2, meta
     )
-
     total_anual = df_res.sum()
     media_mensal = int(total_anual["Total (kWh)"] / 12)
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Módulos Arr. 1", n1_manual)
-    c2.metric("Módulos Arr. 2", n2_manual)
-    c3.metric("Geração média/mês", f"{media_mensal} kWh")
-    c4.metric("Meta", f"{meta} kWh", delta=f"{media_mensal - meta:+.0f} kWh")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Módulos Arr. 1", n1_manual)
+    m2.metric("Módulos Arr. 2", n2_manual)
+    m3.metric("Geração média/mês", f"{media_mensal} kWh")
+    m4.metric("Meta", f"{meta} kWh", delta=f"{media_mensal - meta:+.0f} kWh")
 
     st.pyplot(fig)
 
