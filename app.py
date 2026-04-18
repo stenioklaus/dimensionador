@@ -159,33 +159,37 @@ with st.sidebar:
     def slider_com_botoes(label, key, min_val, max_val, default, step=1):
         if key not in st.session_state:
             st.session_state[key] = default
+
+        def diminuir():
+            st.session_state[key] = max(min_val, st.session_state[key] - step)
+
+        def aumentar():
+            st.session_state[key] = min(max_val, st.session_state[key] + step)
+
+        def digitar():
+            st.session_state[key] = st.session_state[f"{key}_input"]
+
         st.caption(label)
         c1, c2, c3 = st.columns([1, 2, 1])
-        if c1.button("−", key=f"{key}_menos", use_container_width=True):
-            st.session_state[key] = max(min_val, st.session_state[key] - step)
-            st.rerun()
-        digitado = c2.number_input(
+        c1.button("−", key=f"{key}_menos", on_click=diminuir, use_container_width=True)
+        c2.number_input(
             label, min_value=min_val, max_value=max_val,
             value=st.session_state[key], step=step,
-            key=f"{key}_input", label_visibility="collapsed"
+            key=f"{key}_input", label_visibility="collapsed",
+            on_change=digitar
         )
-        if digitado != st.session_state[key]:
-            st.session_state[key] = digitado
-            st.rerun()
-        if c3.button("+", key=f"{key}_mais", use_container_width=True):
-            st.session_state[key] = min(max_val, st.session_state[key] + step)
-            st.rerun()
+        c3.button("+", key=f"{key}_mais", on_click=aumentar, use_container_width=True)
         return st.session_state[key]
 
     st.subheader("🔆 Arranjo 1")
     inc1 = slider_com_botoes("Inclinação", "inc1", 0, 90, 20, step=1)
     azi1 = slider_com_botoes("Orientação", "azi1", -180, 180, 0, step=1)
-    pot_mod1 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5, key="pot_mod1")
+    pot_mod1 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5)
 
     st.subheader("🔆 Arranjo 2")
     inc2 = slider_com_botoes("Inclinação", "inc2", 0, 90, 20, step=1)
     azi2 = slider_com_botoes("Orientação", "azi2", -180, 180, 0, step=1)
-    pot_mod2 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5, key="pot_mod2")
+    pot_mod2 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5)
 
     st.subheader("⚙️ Parâmetros do Sistema")
     ef_sys = st.slider("PR Base (eficiência do sistema)", 0.50, 1.00, 0.75, step=0.05)
