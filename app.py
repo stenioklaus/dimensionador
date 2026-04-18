@@ -10,10 +10,7 @@ st.set_page_config(page_title="Dimensionador Fotovoltaico", page_icon="☀️", 
 st.title("☀️ Dimensionador Fotovoltaico ☀️")
 st.caption("Cálculo de geração solar com dados da NASA POWER, elaborado por Estevão Krause - Der Krause")
 
-# ── Funções de cálculo ────────────────────────────────────────────────────────
-
 N_DIAS_REFERENCIA = [17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344]
-
 
 def calcular_fator_rb_preciso(mes, lat, inc, azi=0):
     delta = np.radians(23.45 * np.sin(np.radians(360 * (284 + N_DIAS_REFERENCIA[mes - 1]) / 365)))
@@ -34,7 +31,6 @@ def calcular_fator_rb_preciso(mes, lat, inc, azi=0):
     prod_horiz = np.trapezoid(np.maximum(cos_theta_z, 0), w_range)
     return max(prod_incl / prod_horiz, 0.1) if prod_horiz > 0 else 0.1
 
-
 def buscar_coordenadas(cidade):
     try:
         url = f"https://nominatim.openstreetmap.org/search?q={cidade}&format=json&limit=1"
@@ -48,7 +44,6 @@ def buscar_coordenadas(cidade):
         st.warning(f"Não foi possível buscar coordenadas: {e}")
     return None, None
 
-
 @st.cache_data(ttl=3600)
 def buscar_dados_nasa(lat, lon):
     api_url = (
@@ -57,41 +52,26 @@ def buscar_dados_nasa(lat, lon):
         f"&community=RE&latitude={lat}&longitude={lon}"
         f"&start=20220101&end=20221231&format=JSON"
     )
-    res = requests.get(api_url, timeout=30).json()
-    return res
-
+    return requests.get(api_url, timeout=30).json()
 
 def processar_dados(res, lat, inc1, azi1, inc2, azi2, ef_sys, temp_coef, ref_temp):
     solar_data = res["properties"]["parameter"]["ALLSKY_SFC_SW_DWN"]
     df = pd.DataFrame.from_dict(solar_data, orient="index", columns=["HSP"])
     df.index = pd.to_datetime(df.index)
     df_m = df.resample("MS").sum()
-
     t_max_dict = res["properties"]["parameter"]["T2M_MAX"]
     t_min_dict = res["properties"]["parameter"]["T2M_MIN"]
-    t_max_m = (
-        pd.DataFrame.from_dict(t_max_dict, orient="index", columns=["T"])
-        .set_index(pd.to_datetime(list(t_max_dict.keys())))
-        .resample("MS")
-        .mean()
-    )
-    t_min_m = (
-        pd.DataFrame.from_dict(t_min_dict, orient="index", columns=["T"])
-        .set_index(pd.to_datetime(list(t_min_dict.keys())))
-        .resample("MS")
-        .mean()
-    )
-
+    t_max_m = (pd.DataFrame.from_dict(t_max_dict, orient="index", columns=["T"])
+               .set_index(pd.to_datetime(list(t_max_dict.keys()))).resample("MS").mean())
+    t_min_m = (pd.DataFrame.from_dict(t_min_dict, orient="index", columns=["T"])
+               .set_index(pd.to_datetime(list(t_min_dict.keys()))).resample("MS").mean())
     f1 = [calcular_fator_rb_preciso(m, lat, inc1, azi1) for m in range(1, 13)]
     f2 = [calcular_fator_rb_preciso(m, lat, inc2, azi2) for m in range(1, 13)]
-
     effs = []
     for i in range(12):
         t_ref_amb = t_max_m["T"].iloc[i] if i in [10, 11, 0, 1, 2, 3] else t_min_m["T"].iloc[i]
         effs.append(max(0.01, ef_sys * (1 + temp_coef * (t_ref_amb - ref_temp))))
-
     return df_m, f1, f2, effs
-
 
 def calcular_modulos(df_m, f1, f2, effs, consumo, pot_mod1_wp, pot_mod2_wp):
     hsp1 = sum([df_m["HSP"].iloc[i] * f1[i] * effs[i] for i in range(12)])
@@ -99,7 +79,6 @@ def calcular_modulos(df_m, f1, f2, effs, consumo, pot_mod1_wp, pot_mod2_wp):
     n1 = int(np.ceil((consumo * 6) / hsp1 / (pot_mod1_wp / 1000))) if hsp1 > 0 else 0
     n2 = int(np.ceil((consumo * 6) / hsp2 / (pot_mod2_wp / 1000))) if hsp2 > 0 else 0
     return n1, n2
-
 
 def enviar_telegram(mensagem, token, chat_id):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -110,16 +89,13 @@ def enviar_telegram(mensagem, token, chat_id):
         st.warning(f"Erro ao enviar Telegram: {e}")
         return False
 
-
 def gerar_tabela_e_grafico(df_m, f1, f2, effs, n1, n2, pot_mod1_wp, pot_mod2_wp, meta):
     prod1 = [n1 * (pot_mod1_wp / 1000) * df_m["HSP"].iloc[i] * f1[i] * effs[i] for i in range(12)]
     prod2 = [n2 * (pot_mod2_wp / 1000) * df_m["HSP"].iloc[i] * f2[i] * effs[i] for i in range(12)]
     total = [prod1[i] + prod2[i] for i in range(12)]
-
     meses_abrev = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
     df_res = pd.DataFrame({"Mês": meses_abrev, "Arr 1 (kWh)": prod1, "Arr 2 (kWh)": prod2, "Total (kWh)": total})
     df_res.set_index("Mês", inplace=True)
-
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.bar(meses_abrev, prod1, color="#1a3a6b", alpha=0.85, label="Arranjo 1")
     ax.bar(meses_abrev, prod2, bottom=prod1, color="#4da6e0", alpha=0.85, label="Arranjo 2")
@@ -129,17 +105,40 @@ def gerar_tabela_e_grafico(df_m, f1, f2, effs, n1, n2, pot_mod1_wp, pot_mod2_wp,
     ax.legend()
     ax.grid(axis="y", alpha=0.3)
     plt.tight_layout()
-
     return df_res, fig
 
+def controle_numerico(label, key, min_val, max_val, default, step=1):
+    if key not in st.session_state:
+        st.session_state[key] = default
 
-# ── Sidebar — entradas ────────────────────────────────────────────────────────
+    def diminuir():
+        st.session_state[key] = max(min_val, st.session_state[key] - step)
+
+    def aumentar():
+        st.session_state[key] = min(max_val, st.session_state[key] + step)
+
+    def digitar():
+        st.session_state[key] = st.session_state[f"{key}_input"]
+
+    st.caption(label)
+    c1, c2, c3 = st.columns([1, 2, 1])
+    c1.button("−", key=f"{key}_menos", on_click=diminuir, use_container_width=True)
+    c2.number_input(
+        label, min_value=min_val, max_value=max_val,
+        value=st.session_state[key], step=step,
+        key=f"{key}_input", label_visibility="collapsed",
+        on_change=digitar
+    )
+    c3.button("+", key=f"{key}_mais", on_click=aumentar, use_container_width=True)
+    return st.session_state[key]
+
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 
 with st.sidebar:
     st.header("Configurações")
 
     st.subheader("📍 Localização")
-    cidade = st.text_input("Cidade", value="Igrejinha", placeholder="Digite e pressione Enter")
+    cidade = st.text_input("Cidade", value="Igrejinha", placeholder="Digite e pressione Enter", key="cidade")
 
     if cidade != st.session_state.get("cidade_anterior", ""):
         st.session_state["cidade_anterior"] = cidade
@@ -152,56 +151,30 @@ with st.sidebar:
             else:
                 st.warning("Cidade não encontrada. Ajuste as coordenadas manualmente.")
 
-    lat = st.number_input("Latitude", value=st.session_state.get("lat", -29.57), format="%.4f")
-    lon = st.number_input("Longitude", value=st.session_state.get("lon", -50.79), format="%.4f")
-    meta = st.number_input("Meta de consumo (kWh/mês)", value=1000, min_value=200, step=100)
-
-    def slider_com_botoes(label, key, min_val, max_val, default, step=1):
-        if key not in st.session_state:
-            st.session_state[key] = default
-
-        def diminuir():
-            st.session_state[key] = max(min_val, st.session_state[key] - step)
-
-        def aumentar():
-            st.session_state[key] = min(max_val, st.session_state[key] + step)
-
-        def digitar():
-            st.session_state[key] = st.session_state[f"{key}_input"]
-
-        st.caption(label)
-        c1, c2, c3 = st.columns([1, 2, 1])
-        c1.button("−", key=f"{key}_menos", on_click=diminuir, use_container_width=True)
-        c2.number_input(
-            label, min_value=min_val, max_value=max_val,
-            value=st.session_state[key], step=step,
-            key=f"{key}_input", label_visibility="collapsed",
-            on_change=digitar
-        )
-        c3.button("+", key=f"{key}_mais", on_click=aumentar, use_container_width=True)
-        return st.session_state[key]
+    lat = st.number_input("Latitude", value=st.session_state.get("lat", -29.57), format="%.4f", key="lat_input")
+    lon = st.number_input("Longitude", value=st.session_state.get("lon", -50.79), format="%.4f", key="lon_input")
+    meta = st.number_input("Meta de consumo (kWh/mês)", value=1000, min_value=200, step=100, key="meta_input")
 
     st.subheader("🔆 Arranjo 1")
-    inc1 = slider_com_botoes("Inclinação", "inc1", 0, 90, 20, step=1)
-    azi1 = slider_com_botoes("Orientação", "azi1", -180, 180, 0, step=1)
-    pot_mod1 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5)
+    inc1 = controle_numerico("Inclinação", "inc1", 0, 90, 20)
+    azi1 = controle_numerico("Orientação", "azi1", -180, 180, 0)
+    pot_mod1 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5, key="pot_mod1")
 
     st.subheader("🔆 Arranjo 2")
-    inc2 = slider_com_botoes("Inclinação", "inc2", 0, 90, 20, step=1)
-    azi2 = slider_com_botoes("Orientação", "azi2", -180, 180, 0, step=1)
-    pot_mod2 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5)
+    inc2 = controle_numerico("Inclinação", "inc2", 0, 90, 20)
+    azi2 = controle_numerico("Orientação", "azi2", -180, 180, 0)
+    pot_mod2 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5, key="pot_mod2")
 
     st.subheader("⚙️ Parâmetros do Sistema")
-    ef_sys = st.slider("PR Base (eficiência do sistema)", 0.50, 1.00, 0.75, step=0.05)
-    temp_coef = st.number_input("Coeficiente de temperatura", value=-0.004, format="%.4f")
-    ref_temp = st.number_input("Temperatura de referência (°C)", value=25, step=1)
+    ef_sys = st.slider("PR Base (eficiência do sistema)", 0.50, 1.00, 0.75, step=0.05, key="ef_sys")
+    temp_coef = st.number_input("Coeficiente de temperatura", value=-0.004, format="%.4f", key="temp_coef")
+    ref_temp = st.number_input("Temperatura de referência (°C)", value=25, step=1, key="ref_temp")
 
     st.divider()
     st.subheader("📲 Telegram (opcional)")
-    tg_token = st.text_input("Token do bot", type="password", help="Guarde em variável de ambiente TELEGRAM_TOKEN")
-    tg_chat = st.text_input("Chat ID", help="Guarde em variável de ambiente TELEGRAM_CHAT_ID")
+    tg_token = st.text_input("Token do bot", type="password", key="tg_token_input")
+    tg_chat = st.text_input("Chat ID", key="tg_chat_input")
 
-    # Fallback para variáveis de ambiente
     if not tg_token:
         tg_token = os.environ.get("TELEGRAM_TOKEN", "")
     if not tg_chat:
@@ -217,7 +190,6 @@ if calcular:
             res = buscar_dados_nasa(lat, lon)
             df_m, f1, f2, effs = processar_dados(res, lat, inc1, azi1, inc2, azi2, ef_sys, temp_coef, ref_temp)
             n1, n2 = calcular_modulos(df_m, f1, f2, effs, meta, pot_mod1, pot_mod2)
-
             st.session_state["dados"] = {"df_m": df_m, "f1": f1, "f2": f2, "effs": effs}
             st.session_state["n1"] = n1
             st.session_state["n2"] = n2
@@ -236,10 +208,10 @@ if "dados" in st.session_state:
 
     st.subheader("Ajuste manual de módulos")
     col1, col2 = st.columns(2)
-    n1_manual = col1.number_input("Módulos Arranjo 1", value=int(st.session_state.get("n1", 0)), min_value=0)
-    n2_manual = col2.number_input("Módulos Arranjo 2", value=int(st.session_state.get("n2", 0)), min_value=0)
+    n1_manual = col1.number_input("Módulos Arranjo 1", value=int(st.session_state.get("n1", 0)), min_value=0, key="n1_manual")
+    n2_manual = col2.number_input("Módulos Arranjo 2", value=int(st.session_state.get("n2", 0)), min_value=0, key="n2_manual")
 
-    recalc = st.button("🔄 Recalcular com ajuste manual", use_container_width=False)
+    recalc = st.button("🔄 Recalcular com ajuste manual")
 
     df_res, fig = gerar_tabela_e_grafico(
         dados["df_m"], dados["f1"], dados["f2"], dados["effs"],
@@ -249,7 +221,6 @@ if "dados" in st.session_state:
     total_anual = df_res.sum()
     media_mensal = int(total_anual["Total (kWh)"] / 12)
 
-    # Métricas resumo
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Módulos Arr. 1", n1_manual)
     c2.metric("Módulos Arr. 2", n2_manual)
@@ -261,14 +232,13 @@ if "dados" in st.session_state:
     with st.expander("📋 Tabela mensal detalhada"):
         st.dataframe(df_res.style.format("{:.0f}"), use_container_width=True)
 
-    # Envio Telegram
     if (recalc or calcular) and tg_token and tg_chat:
         msg = (
             f"<b>Resultado Dimensionador Solar</b>\n"
             f"📍 {cidade}\n"
             f"Meta: {meta} kWh/mês\n"
-            f"🛠 Arr1: {n1_manual}x {pot_mod1}Wp | {inc1}° inclinação | {azi1}° azimute\n"
-            f"🛠 Arr2: {n2_manual}x {pot_mod2}Wp | {inc2}° inclinação | {azi2}° azimute\n"
+            f"🛠 Arr1: {n1_manual}x {pot_mod1}Wp | {inc1}° inclinação | {azi1}° orientação\n"
+            f"🛠 Arr2: {n2_manual}x {pot_mod2}Wp | {inc2}° inclinação | {azi2}° orientação\n"
             f"⚡ Média gerada: {media_mensal} kWh/mês"
         )
         ok = enviar_telegram(msg, tg_token, tg_chat)
