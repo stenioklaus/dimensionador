@@ -180,12 +180,12 @@ with st.sidebar:
     st.subheader("🔆 Arranjo 1")
     inc1 = slider_com_botoes("Inclinação", "inc1", 0, 90, 20, step=1)
     azi1 = slider_com_botoes("Orientação", "azi1", -180, 180, 0, step=1)
-    pot_mod1 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5)
+    pot_mod1 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5, key="pot_mod1")
 
     st.subheader("🔆 Arranjo 2")
     inc2 = slider_com_botoes("Inclinação", "inc2", 0, 90, 20, step=1)
     azi2 = slider_com_botoes("Orientação", "azi2", -180, 180, 0, step=1)
-    pot_mod2 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5)
+    pot_mod2 = st.number_input("Potência módulo (Wp)", value=610, min_value=250, step=5, key="pot_mod2")
 
     st.subheader("⚙️ Parâmetros do Sistema")
     ef_sys = st.slider("PR Base (eficiência do sistema)", 0.50, 1.00, 0.75, step=0.05)
