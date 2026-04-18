@@ -31,6 +31,7 @@ def calcular_fator_rb_preciso(mes, lat, inc, azi=0):
     prod_horiz = np.trapezoid(np.maximum(cos_theta_z, 0), w_range)
     return max(prod_incl / prod_horiz, 0.1) if prod_horiz > 0 else 0.1
 
+@st.cache_data(ttl=86400)
 def buscar_coordenadas(cidade):
     try:
         url = f"https://nominatim.openstreetmap.org/search?q={cidade}&format=json&limit=1"
@@ -38,10 +39,8 @@ def buscar_coordenadas(cidade):
         response = requests.get(url, headers=headers, timeout=5).json()
         if response:
             return float(response[0]["lat"]), float(response[0]["lon"])
-    except requests.exceptions.ConnectionError:
-        st.warning("Sem conexão com a internet.")
-    except Exception as e:
-        st.warning(f"Não foi possível buscar coordenadas: {e}")
+    except Exception:
+        pass
     return None, None
 
 @st.cache_data(ttl=3600)
@@ -54,6 +53,7 @@ def buscar_dados_nasa(lat, lon):
     )
     return requests.get(api_url, timeout=30).json()
 
+@st.cache_data(ttl=600)
 def processar_dados(res, lat, inc1, azi1, inc2, azi2, ef_sys, temp_coef, ref_temp):
     solar_data = res["properties"]["parameter"]["ALLSKY_SFC_SW_DWN"]
     df = pd.DataFrame.from_dict(solar_data, orient="index", columns=["HSP"])
@@ -89,6 +89,7 @@ def enviar_telegram(mensagem, token, chat_id):
         st.warning(f"Erro ao enviar Telegram: {e}")
         return False
 
+@st.cache_data(ttl=600)
 def gerar_tabela_e_grafico(df_m, f1, f2, effs, n1, n2, pot_mod1_wp, pot_mod2_wp, meta):
     prod1 = [n1 * (pot_mod1_wp / 1000) * df_m["HSP"].iloc[i] * f1[i] * effs[i] for i in range(12)]
     prod2 = [n2 * (pot_mod2_wp / 1000) * df_m["HSP"].iloc[i] * f2[i] * effs[i] for i in range(12)]
